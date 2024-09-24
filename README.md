@@ -8,7 +8,6 @@ The source code implements the high-order implicit time integration schemes in t
       primaryClass={math.NA},
       url={https://arxiv.org/abs/2409.13397}, 
 }
-https://arxiv.org/abs/2409.13397
 
 The code is written in MATLAB and developed by:
          Chongmin Song (c.song@unsw.edu.au)
