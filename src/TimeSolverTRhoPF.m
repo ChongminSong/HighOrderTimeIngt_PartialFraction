@@ -1,27 +1,13 @@
-function [dsp,vel,acc] = TimeSolverTRhoPF(p,rhoInfty,signal,ns,dt, ...
+function [dsp,vel,acc] = TimeSolverTRhoPF(user_params,signal,ns,dt, ...
                                        K,M,C,F,u0,v0,pDOF)
 
-% The function is a part of the source code implementing 
-% the high-order implicit time integration schemes in the paper:
-% @misc{oshea2024highorderimplicittimeintegration,
-%       title={A high-order implicit time integration method for linear and nonlinear dynamics with efficient computation of accelerations}, 
-%       author={Daniel O'Shea and Xiaoran Zhang and Shayan Mohammadian and Chongmin Song},
-%       year={2024},
-%       eprint={2409.13397},
-%       archivePrefix={arXiv},
-%       primaryClass={math.NA},
-%       url={https://arxiv.org/abs/2409.13397}, 
-% }
-% 
-% The code is developed by:
-%          Chongmin Song (c.song@unsw.edu.au)
-%          Daniel O'Shea (d.oshea@unsw.edu.au)
-%          Xiaoran Zhang (xiaoran.zhang1@student.unsw.edu.au)  
-% 
-% It is distributed under the MIT License (https://opensource.org/license/mit/)
-
 %% Preliminaries
-nz = size(K,1);
+p = user_params(1);         % order of rational approximation
+rhoInfty = user_params(2);  
+N = p + 1;                  % no. of integration points
+pf = N - 1;                 % order of force expansion
+
+n = size(K,1);  % no. of degrees of freedom
 
 K =  dt*dt*sparse(K);
 C = dt*sparse(C);
@@ -36,11 +22,10 @@ vel = dsp;  % velocities
 acc = dsp;  % accelerations
 
 %% Initialise scheme
-pf = p;
 [r, prcoe, cfr1] = InitSchemeRhoPF(p, rhoInfty, pf);
 
-s = forceSamplingPoints(pf+1);
-Tcfr1 = transMtxPointsToPoly(s, pf+1)*cfr1(1:pf+1,:);
+s = forceSamplingPoints(N);
+Tcfr1 = transMtxPointsToPoly(s, p+1)*cfr1(1:p+1,:);
 
 % Initial conditions
 tm = 0;
@@ -73,19 +58,19 @@ for it = 2:ns
 
     tm = tm + dt;
     
-    zi = zeros(2*nz,1);
+    x = zeros(2*n,1);
     for ip = 1:p
-        g = zi + prcoe(ip)*z;
+        g = x + prcoe(ip)*z;
         rfri = Fp*Tcfr1(:,ip); % r*{fri}
-        zi(1:nz) = dKd\(r*(M*g(1:nz)) - K*g(nz+1:end) + rfri);
-        zi(nz+1:end) = (zi(1:nz) + g(nz+1:end))/r;
+        x(1:n) = dKd\(r*(M*g(1:n)) - K*g(n+1:end) + rfri);
+        x(n+1:end) = (x(1:n) + g(n+1:end))/r;
     end
-    z = prcoe(p+1)*z + zi;
-    an = prcoe(end)*an + (r*zi(1:nz) - g(1:nz));
+    z = prcoe(p+1)*z + x;
+    an = prcoe(end)*an + (r*x(1:n) - g(1:n));
 
     % store responses for output
     vel(it,:) = z(pDOF,1);
-    dsp(it,:) = z(nz+pDOF,1);
+    dsp(it,:) = z(n+pDOF,1);
     acc(it,:) = an;
 
 end

@@ -1,25 +1,11 @@
-function  [dsp,vel,acc] = TimeSolverPF(p,rhoInfty,signal,ns,dt,K,M,C,F,u0,v0,pDOF)
-
-% The function is a part of the source code implementing 
-% the high-order implicit time integration schemes in the paper:
-% @misc{oshea2024highorderimplicittimeintegration,
-%       title={A high-order implicit time integration method for linear and nonlinear dynamics with efficient computation of accelerations}, 
-%       author={Daniel O'Shea and Xiaoran Zhang and Shayan Mohammadian and Chongmin Song},
-%       year={2024},
-%       eprint={2409.13397},
-%       archivePrefix={arXiv},
-%       primaryClass={math.NA},
-%       url={https://arxiv.org/abs/2409.13397}, 
-% }
-% 
-% The code is developed by:
-%          Chongmin Song (c.song@unsw.edu.au)
-%          Daniel O'Shea (d.oshea@unsw.edu.au)
-%          Xiaoran Zhang (xiaoran.zhang1@student.unsw.edu.au)  
-% 
-% It is distributed under the MIT License (https://opensource.org/license/mit/)
+function  [dsp,vel,acc] = TimeSolverPF(user_params,signal,ns,dt,K,M,C,F,u0,v0,pDOF)
 
 %% Preliminaries
+p = user_params(1);         % order of rational approximation
+rhoInfty = user_params(2);  
+N = p + 1;                  % no. of integration points
+pf = N - 1;                 % order of force expansion
+
 n = size(K,1);
 
 K =  dt*dt*sparse(K);
@@ -35,11 +21,10 @@ vel = dsp;  % velocities
 acc = dsp;  % accelerations
 
 %% Initialise scheme
-pf = p+1;
 [rho, plr, rs, a, cfr] = InitSchemePadePF(p,rhoInfty,pf);
 
-s = forceSamplingPoints(pf+1);
-Tcfr = transMtxPointsToPoly(s, pf)*cfr(1:pf,:);
+s = forceSamplingPoints(N);
+Tcfr = transMtxPointsToPoly(s, p+1)*cfr(1:p+1,:);
 
 % Initial conditions
 tm = 0;
@@ -92,9 +77,9 @@ for it= 2:ns
         g = real(plr(1))*z0;
         fri = Fp*(real(Tcfr(:,1)));
         ftmp = dKd1\(r*(M*g(1:n)) - K*g(n+1:end) + r*fri);
-        y = [ftmp ; (ftmp+g(n+1:end))/r];
-        z = z + real(a(1))*y;
-        an = an + real(a(1))*(r*y(1:n) - g(1:n));
+        x = [ftmp ; (ftmp+g(n+1:end))/r];
+        z = z + real(a(1))*x;
+        an = an + real(a(1))*(r*x(1:n) - g(1:n));
     end
     
     % complex roots
@@ -105,8 +90,8 @@ for it= 2:ns
             cfri = Fp*(Tcfr(:,ic+nReal));
             ctmp = plr(ic+nReal)*(r*(M*z0(1:n)) - K*z0(n+1:end)) + r*cfri;
             tmp(LUp{ic},:) = U{ic}\(L{ic}\ctmp(LUq{ic},:));
-            y = [tmp; (tmp + cg(n+1:end))/r ];
-            z = z + 2*real(a(ic+nReal)*y);
+            x = [tmp; (tmp + cg(n+1:end))/r ];
+            z = z + 2*real(a(ic+nReal)*x);
             an = an + 2*real(a(ic+nReal)*(r*tmp - cg(1:n)));
         end
     end

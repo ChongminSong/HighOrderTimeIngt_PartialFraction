@@ -1,21 +1,3 @@
-% An example in the paper:
-% @misc{oshea2024highorderimplicittimeintegration,
-%       title={A high-order implicit time integration method for linear and nonlinear dynamics with efficient computation of accelerations}, 
-%       author={Daniel O'Shea and Xiaoran Zhang and Shayan Mohammadian and Chongmin Song},
-%       year={2024},
-%       eprint={2409.13397},
-%       archivePrefix={arXiv},
-%       primaryClass={math.NA},
-%       url={https://arxiv.org/abs/2409.13397}, 
-% }
-% 
-% The code is developed by:
-%          Chongmin Song (c.song@unsw.edu.au)
-%          Daniel O'Shea (d.oshea@unsw.edu.au)
-%          Xiaoran Zhang (xiaoran.zhang1@student.unsw.edu.au)  
-% 
-% It is distributed under the MIT License (https://opensource.org/license/mit/)
-
 clear; close all;
 dbstop if error;
 
@@ -81,16 +63,20 @@ aRef = a_exact(tp);
 
 %% Time stepping solution
 ns = floor(tmax/dt) + 1;    % number of time steps
-switch scheme
 
-    % scheme using single multiple root
+% store user-parameters
+user_params = [nSubStep, rhoInfty];
+
+switch scheme
+    
+    % scheme using a single multiple root
     case 'M-PF'
-        [dsp, vel, acc] = TimeSolverTRhoPF(nSubStep,rhoInfty,fHist, ...
+        [dsp, vel, acc] = TimeSolverTRhoPF(user_params,fHist, ...
                                         ns,dt,k,m,c,F0,u0,v0,pDOF);
 
     % scheme using distinct roots
     case 'PadePF'
-        [dsp, vel, acc] = TimeSolverPF(nSubStep, rhoInfty,fHist,...
+        [dsp, vel, acc] = TimeSolverPF(user_params,fHist,...
                                         ns,dt,k,m,c,F0,u0,v0,pDOF);
 
 end
